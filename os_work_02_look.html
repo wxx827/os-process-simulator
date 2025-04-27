@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>进程调度算法模拟器</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --background-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --text-color: #2c3e50;
+            --border-color: #ecf0f1;
+            --accent-color: #9b59b6;
+            --warning-color: #e74c3c;
+            --new-color: #9b59b6;
+            --ready-color: #3498db;
+            --running-color: #2ecc71; 
+            --waiting-color: #f39c12;
+            --terminated-color: #e74c3c;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        header h1 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            color: var(--text-color);
+            opacity: 0.8;
+        }
+        
+        .connection-status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+            color: white;
+            margin-top: 10px;
+        }
+        
+        .status-connected {
+            background-color: var(--secondary-color);
+        }
+        
+        .status-disconnected {
+            background-color: var(--warning-color);
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .control-panel {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .control-panel h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+        
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s, transform 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary-color);
+        }
+        
+        .btn-secondary:hover {
+            background-color: #27ae60;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+        }
+        
+        .btn-warning:hover {
+            background-color: #c0392b;
+        }
+        
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        
+        .simulation-controls {
+            margin-top: 30px;
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .simulation-controls h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .visualizer {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .visualizer h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .process-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        .process-table th, .process-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .process-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+        
+        .process-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+            color: white;
+        }
+        
+        .status-NEW {
+            background-color: var(--new-color);
+        }
+        
+        .status-READY {
+            background-color: var(--ready-color);
+        }
+        
+        .status-RUNNING {
+            background-color: var(--running-color);
+        }
+        
+        .status-WAITING {
+            background-color: var(--waiting-color);
+        }
+        
+        .status-TERMINATED {
+            background-color: var(--terminated-color);
+        }
+        
+        .process-graph {
+            margin-top: 30px;
+        }
+        
+        .statistics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+        
+        .stat-card h3 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+        
+        .system-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .system-info p {
+            margin: 5px 0;
+        }
+        
+        .gantt-chart {
+            margin-top: 30px;
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .gantt-chart h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .gantt-container {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        
+        .gantt-row {
+            display: flex;
+            height: 40px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        
+        .gantt-label {
+            width: 100px;
+            font-weight: 500;
+            margin-right: 10px;
+        }
+        
+        .gantt-timeline {
+            flex: 1;
+            display: flex;
+            height: 100%;
+            position: relative;
+        }
+        
+        .gantt-time-markers {
+            position: absolute;
+            top: -20px;
+            left: 0;
+            width: 100%;
+            display: flex;
+        }
+        
+        .gantt-time-marker {
+            flex: 1;
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+        }
+        
+        .gantt-block {
+            height: 100%;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            margin-right: 2px;
+        }
+        
+        .ready-queue {
+            margin-top: 30px;
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        .ready-queue h2 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .queue-display {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .queue-item {
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid var(--ready-color);
+            display: flex;
+            flex-direction: column;
+            min-width: 150px;
+        }
+        
+        .queue-item p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        
+        .queue-item p.process-name {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        /* Toast message for notifications */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1001;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .toast.show {
+            opacity: 1;
+        }
+        
+        .toast.error {
+            background-color: var(--warning-color);
+        }
+        
+        /* Canvas styling for Gantt chart */
+        #ganttCanvas {
+            margin-top: 20px;
+            background-color: #fafafa;
+            border-radius: 5px;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>进程调度算法模拟器</h1>
+            <p>可视化展示多种调度算法 - FCFS、SJF、优先级调度、时间片轮转</p>
+            <div id="connectionStatus" class="connection-status status-disconnected">
+                未连接
+            </div>
+        </header>
+        
+        <div class="statistics">
+            <div class="stat-card">
+                <h3>总进程数</h3>
+                <div class="number" id="totalProcesses">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>就绪</h3>
+                <div class="number" id="readyProcesses">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>运行中</h3>
+                <div class="number" id="runningProcesses">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>等待</h3>
+                <div class="number" id="waitingProcesses">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>已完成</h3>
+                <div class="number" id="terminatedProcesses">0</div>
+            </div>
+        </div>
+        
+        <div class="dashboard">
+            <div>
+                <div class="control-panel">
+                    <h2>进程控制</h2>
+                    <div class="form-group">
+                        <label for="processName">进程名称</label>
+                        <input type="text" id="processName" placeholder="输入进程名称">
+                    </div>
+                    <div class="form-group">
+                        <label for="processPriority">优先级 (1-10)</label>
+                        <input type="number" id="processPriority" min="1" max="10" value="5">
+                    </div>
+                    <div class="form-group">
+                        <label for="burstTime">执行时间</label>
+                        <input type="number" id="burstTime" min="1" value="5">
+                    </div>
+                    <div class="form-group">
+                        <label for="arrivalTime">到达时间</label>
+                        <input type="number" id="arrivalTime" min="0" value="0">
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn" id="createProcessBtn">创建进程</button>
+                    </div>
+                </div>
+                
+                <div class="simulation-controls">
+                    <h2>调度控制</h2>
+                    <div class="form-group">
+                        <label for="algorithmSelect">调度算法</label>
+                        <select id="algorithmSelect">
+                            <option value="FCFS">先来先服务 (FCFS)</option>
+                            <option value="SJF">短作业优先 (SJF)</option>
+                            <option value="Priority">优先级调度</option>
+                            <option value="RR">时间片轮转 (RR)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="quantumGroup">
+                        <label for="quantumSize">时间片大小</label>
+                        <input type="number" id="quantumSize" min="1" value="2">
+                    </div>
+                    <div class="form-group">
+                        <label for="simulationSpeed">模拟速度 (毫秒)</label>
+                        <input type="number" id="simulationSpeed" min="100" max="5000" value="1000">
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn" id="stepSimulationBtn">单步执行</button>
+                        <button class="btn btn-secondary" id="startSimulationBtn">开始模拟</button>
+                        <button class="btn btn-warning" id="resetSimulationBtn">重置模拟</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="visualizer">
+                <h2>进程表</h2>
+                <table class="process-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>名称</th>
+                            <th>状态</th>
+                            <th>优先级</th>
+                            <th>执行时间</th>
+                            <th>剩余时间</th>
+                            <th>到达时间</th>
+                            <th>等待时间</th>
+                            <th>周转时间</th>
+                        </tr>
+                    </thead>
+                    <tbody id="processTableBody">
+                        <!-- 进程数据将在这里动态填充 -->
+                    </tbody>
+                </table>
+                
+                <div class="system-info">
+                    <p><strong>系统时间:</strong> <span id="systemTime">0</span></p>
+                    <p><strong>当前算法:</strong> <span id="currentAlgorithm">FCFS</span></p>
+                    <p><strong>时间片大小:</strong> <span id="currentQuantum">2</span></p>
+                    <p><strong>当前运行进程:</strong> <span id="runningProcess">无</span></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="ready-queue">
+            <h2>就绪队列</h2>
+            <div class="queue-display" id="readyQueueDisplay">
+                <!-- 就绪队列将在这里动态填充 -->
+            </div>
+        </div>
+        
+        <div class="gantt-chart">
+            <h2>甘特图</h2>
+            <div class="gantt-container">
+                <canvas id="ganttCanvas" width="1000" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="toast" id="toast"></div>
+    
+    <script>
+        // 全局变量
+        let processes = [];
+        let readyQueue = [];
+        let runningProcess = null;
+        let systemTime = 0;
+        let quantum = 2;
+        let currentAlgorithm = "FCFS";
+        let websocket = null;
+        let simulationRunning = false;
+        let simulationInterval = null;
+        let ganttData = []; // 用于存储甘特图数据
+        
+        // WebSocket服务器URL
+        const WS_SERVER_URL = 'ws://123.249.69.9:8081';
+        
+        // 状态映射
+        const STATE_MAP = {
+            'NEW': '新建',
+            'READY': '就绪',
+            'RUNNING': '运行',
+            'WAITING': '等待',
+            'TERMINATED': '终止'
+        };
+        
+        // 状态颜色映射
+        const STATE_COLORS = {
+            'NEW': '#9b59b6',
+            'READY': '#3498db',
+            'RUNNING': '#2ecc71',
+            'WAITING': '#f39c12',
+            'TERMINATED': '#e74c3c'
+        };
+        
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 连接WebSocket服务器
+            connectWebSocket();
+            
+            // 设置事件监听器
+            setupEventListeners();
+            
+            // 初始化甘特图
+            initGanttChart();
+        });
+        
+        // 连接WebSocket服务器
+        function connectWebSocket() {
+            updateConnectionStatus('正在连接...', 'status-waiting');
+            
+            try {
+                websocket = new WebSocket(WS_SERVER_URL);
+                
+                websocket.onopen = function(event) {
+                    updateConnectionStatus('已连接', 'status-connected');
+                    showToast('已连接到调度服务器');
+                    console.log('WebSocket连接已建立');
+                };
+                
+                websocket.onmessage = function(event) {
+                    console.log('收到服务器消息:', event.data);
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (data.type === 'state_update') {
+                            handleStateUpdate(data.data);
+                        }
+                    } catch (error) {
+                        console.error('解析消息失败:', error);
+                    }
+                };
+                
+                websocket.onclose = function(event) {
+                    updateConnectionStatus('连接已断开', 'status-disconnected');
+                    showToast('服务器连接已断开，尝试重新连接...', true);
+                    
+                    // 尝试重新连接
+                    setTimeout(connectWebSocket, 5000);
+                };
+                
+                websocket.onerror = function(error) {
+                    updateConnectionStatus('连接错误', 'status-disconnected');
+                    showToast('连接服务器时发生错误', true);
+                    console.error('WebSocket错误:', error);
+                };
+            } catch (e) {
+                updateConnectionStatus('连接失败', 'status-disconnected');
+                showToast('WebSocket初始化失败', true);
+                console.error('WebSocket初始化错误:', e);
+            }
+        }
+        
+        // 更新连接状态UI
+        function updateConnectionStatus(message, className) {
+            const statusElement = document.getElementById('connectionStatus');
+            statusElement.textContent = message;
+            statusElement.className = 'connection-status ' + className;
+        }
+        
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 创建进程按钮
+            document.getElementById('createProcessBtn').addEventListener('click', createProcess);
+            
+            // 选择算法下拉框
+            document.getElementById('algorithmSelect').addEventListener('change', changeAlgorithm);
+            
+            // 设置时间片大小
+            document.getElementById('quantumSize').addEventListener('change', changeQuantum);
+            
+            // 单步执行按钮
+            document.getElementById('stepSimulationBtn').addEventListener('click', stepSimulation);
+            
+            // 开始模拟按钮
+            document.getElementById('startSimulationBtn').addEventListener('click', toggleSimulation);
+            
+            // 重置模拟按钮
+            document.getElementById('resetSimulationBtn').addEventListener('click', resetSimulation);
+            
+            // 初始隐藏/显示时间片设置
+            updateQuantumVisibility();
+        }
+        
+        // 发送WebSocket消息
+        function sendMessage(type, data) {
+            if (websocket && websocket.readyState === WebSocket.OPEN) {
+                const message = {
+                    type: type,
+                    data: data
+                };
+                const messageString = JSON.stringify(message);
+                console.log('发送消息:', messageString);
+                websocket.send(messageString);
+            } else {
+                showToast('未连接到服务器，无法发送请求', true);
+            }
+        }
+        
+        // 处理服务器状态更新
+        function handleStateUpdate(data) {
+            // 更新进程数据
+            if (data.processes) {
+                processes = data.processes;
+            }
+            
+            // 更新系统信息
+            if (data.systemTime !== undefined) {
+                systemTime = data.systemTime;
+                document.getElementById('systemTime').textContent = systemTime;
+            }
+            
+            if (data.algorithm) {
+                currentAlgorithm = data.algorithm;
+                document.getElementById('currentAlgorithm').textContent = currentAlgorithm;
+                document.getElementById('algorithmSelect').value = currentAlgorithm;
+                updateQuantumVisibility();
+            }
+            
+            if (data.quantum) {
+                quantum = data.quantum;
+                document.getElementById('currentQuantum').textContent = quantum;
+                document.getElementById('quantumSize').value = quantum;
+            }
+            
+            // 更新运行中进程信息
+            if (data.runningProcess) {
+                runningProcess = data.runningProcess;
+                document.getElementById('runningProcess').textContent = 
+                    `${runningProcess.name} (ID:${runningProcess.id}, 剩余时间:${runningProcess.remainingTime})`;
+            } else {
+                runningProcess = null;
+                document.getElementById('runningProcess').textContent = '无';
+            }
+            
+            // 更新就绪队列
+            if (data.readyQueue) {
+                readyQueue = data.readyQueue;
+                renderReadyQueue();
+            }
+            
+            // 更新统计信息
+            if (data.statistics) {
+                document.getElementById('totalProcesses').textContent = data.statistics.total;
+                document.getElementById('readyProcesses').textContent = data.statistics.ready;
+                document.getElementById('runningProcesses').textContent = data.statistics.running;
+                document.getElementById('waitingProcesses').textContent = data.statistics.waiting;
+                document.getElementById('terminatedProcesses').textContent = data.statistics.terminated;
+            }
+            
+            // 更新进程表
+            renderProcessTable();
+            
+            // 更新甘特图
+            updateGanttChart();
+        }
+        
+        // 创建新进程
+        function createProcess() {
+            const name = document.getElementById('processName').value.trim() || '未命名进程';
+            const priority = parseInt(document.getElementById('processPriority').value) || 5;
+            const burstTime = parseInt(document.getElementById('burstTime').value) || 5;
+            const arrivalTime = parseInt(document.getElementById('arrivalTime').value) || 0;
+            
+            sendMessage('create_process', {
+                name: name,
+                priority: priority,
+                burstTime: burstTime,
+                arrivalTime: arrivalTime
+            });
+            
+            showToast(`已请求创建进程 "${name}"`);
+        }
+        
+        // 切换调度算法
+        function changeAlgorithm() {
+            const algorithm = document.getElementById('algorithmSelect').value;
+            
+            sendMessage('set_algorithm', {
+                algorithm: algorithm
+            });
+            
+            currentAlgorithm = algorithm;
+            updateQuantumVisibility();
+            
+            showToast(`调度算法已更改为 ${algorithm}`);
+        }
+        
+        // 更新时间片大小的可见性
+        function updateQuantumVisibility() {
+            const quantumGroup = document.getElementById('quantumGroup');
+            if (currentAlgorithm === 'RR') {
+                quantumGroup.style.display = 'block';
+            } else {
+                quantumGroup.style.display = 'none';
+            }
+        }
+        
+        // 更改时间片大小
+        function changeQuantum() {
+            const newQuantum = parseInt(document.getElementById('quantumSize').value) || 2;
+            
+            if (newQuantum > 0) {
+                sendMessage('set_quantum', {
+                    quantum: newQuantum
+                });
+                
+                quantum = newQuantum;
+                showToast(`时间片大小已更改为 ${newQuantum}`);
+            }
+        }
+        
+        // 单步执行调度
+        function stepSimulation() {
+            sendMessage('step_simulation', {});
+        }
+        
+        // 切换模拟状态（开始/停止）
+        function toggleSimulation() {
+            const btn = document.getElementById('startSimulationBtn');
+            
+            if (simulationRunning) {
+                // 停止模拟
+                simulationRunning = false;
+                btn.textContent = '开始模拟';
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-secondary');
+                showToast('模拟已暂停');
+            } else {
+                // 开始模拟
+                simulationRunning = true;
+                btn.textContent = '停止模拟';
+                btn.classList.remove('btn-secondary');
+                btn.classList.add('btn-warning');
+                
+                const speed = parseInt(document.getElementById('simulationSpeed').value) || 1000;
+                
+                sendMessage('start_simulation', {
+                    speed: speed
+                });
+                
+                showToast(`模拟已开始，速度: ${speed}毫秒`);
+            }
+        }
+        
+        // 重置模拟
+        function resetSimulation() {
+            sendMessage('reset_simulation', {});
+            
+            // 重置模拟状态
+            if (simulationRunning) {
+                simulationRunning = false;
+                const btn = document.getElementById('startSimulationBtn');
+                btn.textContent = '开始模拟';
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-secondary');
+            }
+            
+            // 清空甘特图数据
+            ganttData = [];
+            
+            showToast('模拟已重置');
+        }
+        
+        // 渲染进程表
+        function renderProcessTable() {
+            const tableBody = document.getElementById('processTableBody');
+            tableBody.innerHTML = '';
+            
+            processes.forEach(process => {
+                const row = document.createElement('tr');
+                
+                const statusClass = `status-${process.state}`;
+                const statusText = STATE_MAP[process.state] || process.state;
+                
+                row.innerHTML = `
+                    <td>${process.id}</td>
+                    <td>${process.name}</td>
+                    <td><span class="status ${statusClass}">${statusText}</span></td>
+                    <td>${process.priority}</td>
+                    <td>${process.burstTime}</td>
+                    <td>${process.remainingTime}</td>
+                    <td>${process.arrivalTime}</td>
+                    <td>${process.waitingTime}</td>
+                    <td>${process.turnaroundTime}</td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // 渲染就绪队列
+        function renderReadyQueue() {
+            const queueDisplay = document.getElementById('readyQueueDisplay');
+            queueDisplay.innerHTML = '';
+            
+            if (readyQueue.length === 0) {
+                queueDisplay.innerHTML = '<p>就绪队列为空</p>';
+                return;
+            }
+            
+            readyQueue.forEach(process => {
+                const queueItem = document.createElement('div');
+                queueItem.className = 'queue-item';
+                
+                queueItem.innerHTML = `
+                    <p class="process-name">${process.name}</p>
+                    <p>ID: ${process.id}</p>
+                    <p>优先级: ${process.priority}</p>
+                    <p>剩余时间: ${process.remainingTime}</p>
+                `;
+                
+                queueDisplay.appendChild(queueItem);
+            });
+        }
+        
+        // 初始化甘特图
+        function initGanttChart() {
+            const canvas = document.getElementById('ganttCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 清空画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制初始空白甘特图
+            drawGanttChart(ctx, []);
+        }
+        
+        // 更新甘特图
+        function updateGanttChart() {
+            // 如果有运行进程，添加到甘特图数据
+            if (runningProcess) {
+                const lastEntry = ganttData.length > 0 ? ganttData[ganttData.length - 1] : null;
+                
+                if (!lastEntry || lastEntry.processId !== runningProcess.id) {
+                    // 新的进程开始运行
+                    ganttData.push({
+                        processId: runningProcess.id,
+                        processName: runningProcess.name,
+                        startTime: systemTime,
+                        endTime: systemTime + 1,
+                        color: STATE_COLORS.RUNNING
+                    });
+                } else {
+                    // 同一进程继续运行，更新结束时间
+                    lastEntry.endTime = systemTime + 1;
+                }
+            }
+            
+            // 绘制甘特图
+            const canvas = document.getElementById('ganttCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 清空画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 绘制甘特图
+            drawGanttChart(ctx, ganttData);
+        }
+        
+        // 绘制甘特图
+        function drawGanttChart(ctx, data) {
+            const width = ctx.canvas.width;
+            const height = ctx.canvas.height;
+            const padding = 50;
+            const maxTime = Math.max(20, systemTime + 10); // 至少显示20个时间单位
+            
+            // 计算每个进程的垂直位置
+            const processIds = [...new Set(data.map(item => item.processId))];
+            const processCount = Math.max(processes.length, processIds.length);
+            const processHeight = Math.min(40, (height - padding * 2) / (processCount || 1));
+            const processMap = {};
+            
+            processIds.forEach((id, index) => {
+                processMap[id] = padding + index * processHeight;
+            });
+            
+            // 绘制时间轴
+            ctx.strokeStyle = '#ccc';
+            ctx.beginPath();
+            ctx.moveTo(padding, height - padding / 2);
+            ctx.lineTo(width - padding, height - padding / 2);
+            ctx.stroke();
+            
+            // 绘制时间刻度
+            ctx.fillStyle = '#666';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            
+            const timeStep = Math.ceil(maxTime / 20); // 每隔timeStep个时间单位绘制一个刻度
+            const pixelsPerTime = (width - padding * 2) / maxTime;
+            
+            for (let t = 0; t <= maxTime; t += timeStep) {
+                const x = padding + t * pixelsPerTime;
+                
+                // 绘制刻度线
+                ctx.beginPath();
+                ctx.moveTo(x, height - padding / 2 - 5);
+                ctx.lineTo(x, height - padding / 2 + 5);
+                ctx.stroke();
+                
+                // 绘制时间标签
+                ctx.fillText(t.toString(), x, height - padding / 2 + 20);
+            }
+            
+            // 绘制进程名称
+            processes.forEach((process, index) => {
+                const y = padding + index * processHeight + processHeight / 2;
+                
+                ctx.fillStyle = '#333';
+                ctx.textAlign = 'right';
+                ctx.fillText(`${process.name} (${process.id})`, padding - 10, y + 5);
+            });
+            
+            // 绘制甘特图块
+            data.forEach(item => {
+                const startX = padding + item.startTime * pixelsPerTime;
+                const endX = padding + item.endTime * pixelsPerTime;
+                const blockWidth = Math.max(2, endX - startX); // 至少2像素宽
+                
+                // 如果进程不在processMap中（可能是新进程），添加到映射
+                if (!processMap[item.processId]) {
+                    const index = Object.keys(processMap).length;
+                    processMap[item.processId] = padding + index * processHeight;
+                }
+                
+                const y = processMap[item.processId];
+                
+                // 绘制进程块
+                ctx.fillStyle = item.color;
+                ctx.fillRect(startX, y, blockWidth, processHeight);
+                
+                // 如果块宽度足够，绘制进程ID
+                if (blockWidth > 30) {
+                    ctx.fillStyle = 'white';
+                    ctx.textAlign = 'center';
+                    ctx.font = '12px Arial';
+                    ctx.fillText(item.processId.toString(), startX + blockWidth / 2, y + processHeight / 2 + 4);
+                }
+            });
+        }
+        
+        // 显示toast消息
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = isError ? 'toast show error' : 'toast show';
+            
+            setTimeout(() => {
+                toast.className = toast.className.replace('show', '');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
+

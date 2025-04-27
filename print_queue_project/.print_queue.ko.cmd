@@ -1,0 +1,1 @@
+cmd_/home/ace/print_queue_project/print_queue.ko := ld -r -m elf_x86_64 -T ./scripts/module-common.lds --build-id  -o /home/ace/print_queue_project/print_queue.ko /home/ace/print_queue_project/print_queue.o /home/ace/print_queue_project/print_queue.mod.o
