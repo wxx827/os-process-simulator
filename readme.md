@@ -1,7 +1,17 @@
 ## 项目概述
 
 本项目实现了基于 **C语言** 的一套完整的 Linux 进程管理与调度系统模拟，涵盖了进程的创建、执行、状态管理与调度算法模拟，支持 WebSocket 通信，可视化展示进程状态变化。
- 前端使用 HTML+CSS+JavaScript 技术，结合 Chart.js、Canvas 等进行动态可视化，后端采用多线程、信号量、进程控制、JSON序列化等技术，搭建了真实的操作系统核心机制简化版。
+ 前端使用 HTML+CSS+JavaScript 技术，结合 Chart.js、Canvas 等进行动态可视化，后端采用多线程、信号量、进程控制、JSON序列化等技术，搭建了真实的操作系统核心机制简化版。利用服务器实现广播、通讯等部署。
+
+快速体验链接
+
+http://123.249.69.9/os_work_01_look.html
+
+![image-20250427212938261](C:\Users\wjx\AppData\Roaming\Typora\typora-user-images\image-20250427212938261.png)
+
+http://123.249.69.9/os_work_02_look.html
+
+![image-20250427212948907](C:\Users\wjx\AppData\Roaming\Typora\typora-user-images\image-20250427212948907.png)
 
 ## 项目结构
 
@@ -82,6 +92,6 @@ gcc c3.c -o sync_problem_simulator -lpthread -lwebsockets -ljansson
 
 ## 作者
 
-- **主开发者**：[王哈哈]
+- **主开发者**：[王佳兴]
 - **联系方式**：[[15502673966@163.com](]
 
